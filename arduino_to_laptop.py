@@ -71,6 +71,21 @@ class ArduinoReader:
             else:
                 print(f"Malformed data received: {line}")
         return None
+    
+    def detect_slouch(self):
+        """
+        Detects if the user is slouching based on the data received from the Arduino.
+        """
+        if self.read_and_parse_data() != None:
+            data = self.read_and_parse_data()
+            if data[0] > 1:
+                print("Slouch detected!")
+            elif data[1] > 1:
+                print("Slouch detected!")
+            elif data[2] > 1:
+                print("Slouch detected!")
+            else:
+                print("No slouch detected.")
 
     def close(self):
         """

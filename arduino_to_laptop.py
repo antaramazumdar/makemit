@@ -79,14 +79,25 @@ class ArduinoReader:
         if self.read_and_parse_data() != None:
             data = self.read_and_parse_data()
             if data[0] > 1:
-                print("Slouch detected!")
+                trigger_the_slap_to_end_all_slouching_from_the_news_paper_of_doom()
             elif data[1] > 1:
-                print("Slouch detected!")
+                trigger_the_slap_to_end_all_slouching_from_the_news_paper_of_doom()
             elif data[2] > 1:
-                print("Slouch detected!")
+                trigger_the_slap_to_end_all_slouching_from_the_news_paper_of_doom()
             else:
-                print("No slouch detected.")
+                trigger_the_slap_to_end_all_slouching_from_the_news_paper_of_doom()
 
+    def trigger_the_slap_to_end_all_slouching_from_the_news_paper_of_doom(self):
+        """
+        Sends a binary True to the Arduino to trigger the physical slap mechanism.
+        """
+        if self.connection:
+            try:
+                # Sending a literal byte representing 1 (binary True)
+                self.connection.write(bytes([1]))
+            except serial.SerialException as e:
+                print(f"Failed to send binary True: {e}")
+                
     def close(self):
         """
         Closes the serial connection.

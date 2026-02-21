@@ -53,26 +53,31 @@ class ArduinoReader:
             return self.connection.readline().decode('utf-8').strip()
         return None
 
+    def read_and_parse_data(self):
+        """
+        Reads a line from the Arduino, expecting the format '<val1,val2,val3>'
+        and returns a list of parsed numeric values.
+        """
+        line = self.read_line()
+        if line:
+            # Check if it has the start and end markers
+            if line.startswith('<') and line.endswith('>'):
+                # Remove markers and split by comma
+                content = line[1:-1]
+                values_str = content.split(',')
+                try:
+                    # Convert to floats
+                    values = [float(val.strip()) for val in values_str if val.strip()]
+                    return values
+                except ValueError as e:
+                    print(f"Error parsing data: {line} -> {e}")
+            else:
+                print(f"Malformed data received: {line}")
+        return None
+
     def close(self):
         """
         Closes the serial connection.
         """
         if self.connection:
             self.connection.close()
-
-if __name__ == "__main__":
-    arduino = ArduinoReader()
-
-    if arduino.connection:
-        print("Serial connection established.")
-        try:
-            while True:
-                data = arduino.read_line()
-                if data:
-                    # Echoing the received data
-                    print(data)
-        except KeyboardInterrupt:
-            print("Program terminated by user.")
-        finally:
-            arduino.close()
-            print("Serial connection closed.")

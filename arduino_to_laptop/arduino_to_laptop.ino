@@ -5,13 +5,13 @@ void setup() {
 
 void loop() {
 
-  Serial.print('<'); // Start marker
+  Serial.print('<');          // Start marker
   Serial.print(sensorValue1); // First data point
-  Serial.print(','); // Delimiter
+  Serial.print(',');          // Delimiter
   Serial.print(sensorValue2); // Second data point
-  Serial.print(','); // Delimiter
-  Serial.pring(sensorValue3); // Third data point
-  Serial.println('>'); // End marker and newline
-  
+  Serial.print(',');          // Delimiter
+  Serial.print(sensorValue3); // Third data point
+  Serial.println('>');        // End marker and newline
+
   delay(1000); // Send a message every second
 }

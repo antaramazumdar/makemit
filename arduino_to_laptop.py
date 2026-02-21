@@ -60,13 +60,10 @@ class ArduinoReader:
         """
         line = self.read_line()
         if line:
-            # Check if it has the start and end markers
             if line.startswith('<') and line.endswith('>'):
-                # Remove markers and split by comma
                 content = line[1:-1]
                 values_str = content.split(',')
                 try:
-                    # Convert to floats
                     values = [float(val.strip()) for val in values_str if val.strip()]
                     return values
                 except ValueError as e:

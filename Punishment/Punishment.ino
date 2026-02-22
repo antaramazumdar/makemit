@@ -45,7 +45,7 @@ const unsigned long shrimpterval = 100;
 void setup() {
   Serial.begin(9600);
   lcd.createChar(0, boom);
-  lcd.createChar(1, shrimp)
+  lcd.createChar(1, shrimp);
   lcd.begin(16, 2); // 16 columns, 2 rows
   lcd.setCursor(6, 0);
   lcd.print("!!!");
@@ -117,7 +117,7 @@ void punish() {
 void loop() {
   currentMillis = millis();
   // Check if we are being told to punish
-  slouch_data = analogRead(COM_PIN) > 512;
+  int slouch_data = analogRead(COM_PIN) > 512;
   if (slouch_data >= 512) {
     punish();
   }
@@ -129,11 +129,11 @@ void loop() {
       lcd.clear();
       lcd.print("TAKE THAT SHRIMP");
       lcd.setCursor(5, 1);
-      lcd.write(byte(1));
-      lcd.write(byte(1));
-      lcd.write(byte(1));
-      lcd.write(byte(1));
-      lcd.write(byte(1));   
+      lcd.write(byte(0));
+      lcd.write(byte(0));
+      lcd.write(byte(0));
+      lcd.write(byte(0));
+      lcd.write(byte(0));   
       lastLCDUpdate = millis();
       // IDEA --> SHRIMP METER - detects how close you are to triggering it, 16 shrimps causes a slap.
     }
@@ -157,13 +157,15 @@ void loop() {
   } else {
     int shrimp_num = slouch_data/32;
     if (currentMillis - lastLCDUpdate >= shrimpterval) {
+      lcd.clear();
       lcd.setCursor(0, 0);
       lcd.print("ANALYZING SHRIMP");
       for (int i = 0; i < shrimp_num; i++) {
         lcd.setCursor(i, 1);
         lcd.write(byte(1));
-      lastLCDUpdate = millis();
     }
+      lastLCDUpdate = millis();
+
     }
 
   }

@@ -6,7 +6,7 @@ import random
 import sys
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QPushButton, QVBoxLayout, 
                              QWidget, QLabel, QGraphicsDropShadowEffect, QSpinBox)
-from PyQt6.QtCore import Qt, pyqtSignal, QObject
+from PyQt6.QtCore import Qt, pyqtSignal, QObject, QThread
 from PyQt6.QtGui import QColor
 
 # --- 🔑 CONFIGURATION ---
@@ -16,6 +16,35 @@ ELEVEN_KEY = "d4dc9c60fec5a25472fa8ba900653932f75fe1a2f9f86a1d038455fcb80f9540" 
 class WorkerSignals(QObject):
     result = pyqtSignal(str)
     finished = pyqtSignal()
+
+class MonitorThread(QThread):
+    slouch_found = pyqtSignal()
+    status_update = pyqtSignal(str)
+
+    def __init__(self, duration_mins):
+        super().__init__()
+        self.duration_secs = duration_mins * 60
+        self.active = True
+
+    def run(self):
+        try:
+            reader = ArduinoReader()
+            start_time = time.time()
+            self.status_update.emit("👀 Monitoring Active...")
+
+            while self.active and (time.time() - start_time < self.duration_secs):
+                # Poll the Arduino via your detect_slouch method
+                # Note: Adjust your ArduinoReader to return True/False or similar
+                if reader.detect_slouch(): 
+                    self.slouch_found.emit()
+                    time.sleep(8) # Cool-down to prevent audio/slap overlapping
+                
+                self.msleep(100) # CPU-friendly polling
+            
+            reader.close()
+        except Exception as e:
+            self.status_update.emit(f"Serial Error: {e}")
+
 
 class WhackWorker(threading.Thread):
     def __init__(self, signals):
@@ -182,7 +211,7 @@ class WhimsicalApp(QMainWindow):
 
         # Execute Button
         self.btn = QPushButton("Start Monitoring")
-        self.btn.clicked.connect(self.trigger_whack)
+        self.btn.clicked.connect(self.start_monitoring)
         
         # Add a subtle shadow to the button
         shadow = QGraphicsDropShadowEffect()
@@ -198,20 +227,28 @@ class WhimsicalApp(QMainWindow):
         container.setLayout(layout)
         self.setCentralWidget(container)
 
-    def trigger_whack(self):
+    def start_monitoring(self):
         self.btn.setEnabled(False)
-        self.btn.setText("Monitoring...")
+        self.btn.setText("WATCHING...")
         
+        self.monitor = MonitorThread(self.time_input.value())
+        self.monitor.status_update.connect(self.status_label.setText)
+        self.monitor.slouch_found.connect(self.trigger_voice_roast)
+        self.monitor.finished.connect(self.on_finished)
+        self.monitor.start()
+
+    def trigger_voice_roast(self):
+        self.status_label.setText("🚨 SLOUCH! WHACKING...")
         self.signals = WorkerSignals()
-        self.signals.result.connect(self.status_label.setText)
-        self.signals.finished.connect(self.on_finished)
-        
-        self.worker = WhackWorker(self.signals)
-        self.worker.start()
+        self.signals.finished.connect(lambda: self.status_label.setText("👀 Monitoring..."))
+        self.voice_worker = WhackWorker(self.signals)
+        self.voice_worker.start()
 
     def on_finished(self):
         self.btn.setEnabled(True)
         self.btn.setText("Start Monitoring")
+        self.status_label.setText("Session Finished.")
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

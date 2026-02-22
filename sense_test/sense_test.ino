@@ -76,18 +76,29 @@ void setup() {
 
   pinMode(PRESS_PIN, INPUT);
 
-  // Set A2 as an output to talk to the Punishment Arduino
+  // Set A2-A5 as outputs to send 4-bit binary value to the Punishment Arduino
   pinMode(A2, OUTPUT);
-  analogWrite(A2, 0); // Default to 0
+  pinMode(A3, OUTPUT);
+  pinMode(A4, OUTPUT);
+  pinMode(A5, OUTPUT);
+  // Default all to LOW
+  digitalWrite(A2, LOW);
+  digitalWrite(A3, LOW);
+  digitalWrite(A4, LOW);
+  digitalWrite(A5, LOW);
 }
 
 void loop() {
   wait_for_sit();
 
   if (Serial.available() > 0) {
-    int incomingByte = Serial.read();
+    int incomingByte = Serial.read(); // Will be 0-16
 
-    analogWrite(A2, incomingByte);
+    // Write the value as 4-bit binary across A2 (bit 0) through A5 (bit 3)
+    digitalWrite(A2, (incomingByte & 0x01) ? HIGH : LOW); // bit 0
+    digitalWrite(A3, (incomingByte & 0x02) ? HIGH : LOW); // bit 1
+    digitalWrite(A4, (incomingByte & 0x04) ? HIGH : LOW); // bit 2
+    digitalWrite(A5, (incomingByte & 0x08) ? HIGH : LOW); // bit 3
   }
 
   // 2. Continue reading sensors

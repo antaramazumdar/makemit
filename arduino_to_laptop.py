@@ -126,6 +126,7 @@ class ArduinoReader:
                         print(f"---> Slouch Detected for {elapsed_time:.1f}s! SLAPPING!!! <---")
                         self.send_intensity(255)
                         self.slouch_start_time = None
+                        return True
                     else:
                         print(f"Slouching... (Warning: {elapsed_time:.1f}s / 2.0s)")
             else:

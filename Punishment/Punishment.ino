@@ -15,6 +15,9 @@ int BLUE = 9;
 
 int speed = 1; // lower = faster, higher = slower (ms per step)
 
+const int stepPin = 9;
+const int dirPin = 10;
+
 static int i = 0;
 
 byte boom[8] = {
@@ -39,14 +42,42 @@ void setup() {
 void punish() {
   unsigned long currentMillis = millis();
   // rotate to 90°
-  myServo.write(0);    // rotate to 0°
+  myServo.write(0); // rotate to 0°
   delay(1000);
-  myServo.write(90);   // rotate to 90°
+  myServo.write(90); // rotate to 90°
   delay(1000);
-  myServo.write(180);  // rotate to 180°
+  myServo.write(180); // rotate to 180°
   delay(1000);
+
+  // stepper drive
+  // Sets the two pins as Outputs
+  pinMode(stepPin, OUTPUT);
+  pinMode(dirPin, OUTPUT);
+}
+void loop() {
+  digitalWrite(dirPin,
+               HIGH); // Enables the motor to move in a particular direction
+  // Makes 200 pulses for making one full cycle rotation
+  for (int x = 0; x < 200; x++) {
+    digitalWrite(stepPin, HIGH);
+    delayMicroseconds(500);
+    digitalWrite(stepPin, LOW);
+    delayMicroseconds(500);
+  }
+  delay(1000); // One second delay
+
+  digitalWrite(dirPin, LOW); // Changes the rotations direction
+  // Makes 400 pulses for making two full cycle rotation
+  for (int x = 0; x < 400; x++) {
+    digitalWrite(stepPin, HIGH);
+    delayMicroseconds(500);
+    digitalWrite(stepPin, LOW);
+    delayMicroseconds(500);
+  }
+  delay(1000);
+
   // ---- Non-blocking LCD update ----
-  if (currentMillis - lastLCDUpdate >= 0.5*lcdInterval) {
+  if (currentMillis - lastLCDUpdate >= 0.5 * lcdInterval) {
     lcd.clear();
     lcd.write("YOU GOT SLAPPED");
     lcd.setCursor(6, 1);
@@ -79,9 +110,9 @@ void loop() {
     int loopValue = zeroedCount % 255;
 
     analogWrite(RED, (loop == 0) * (loopValue) + (loop == 1) * (255) +
-                        (loop == 2) * (255 - loopValue));
+                         (loop == 2) * (255 - loopValue));
     analogWrite(GREEN, (loop == 0) * (255 - loopValue) +
-                          (loop == 1) * (loopValue) + (loop == 2) * (255));
+                           (loop == 1) * (loopValue) + (loop == 2) * (255));
     analogWrite(BLUE, (loop == 0) * (255) + (loop == 1) * (255 - loopValue) +
                           (loop == 2) * (loopValue));
     Serial.println(loopValue);

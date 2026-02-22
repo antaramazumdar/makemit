@@ -8,13 +8,20 @@ import time
 
 # Set Constants
 BAUD_RATE = 115200
-ARDUINO_VID = 0x2341 
+
+# Slouch distance thresholds (in cm)
+MAX_DISTANCE = 40.0   # The distance considered to be a "full slouch"
+MIN_DISTANCE = 10.0   # The distance considered to be "perfect posture"
+
 
 class ArduinoReader:
     def __init__(self, baud_rate=BAUD_RATE):
         self.baud_rate = baud_rate
         self.port = self.get_arduino_port()
         self.connection = self.connect_to_arduino(self.port, self.baud_rate)
+        
+        # Track how long the user has been leaning
+        self.slouch_start_time = None
 
     def get_arduino_port(self):
         """
@@ -69,31 +76,61 @@ class ArduinoReader:
                 print(f"Malformed data received: {line}")
         return None
     
-    def detect_slouch(self):
+    def calculate_slouch_intensity(self, data):
         """
-        Detects if the user is slouching based on the data received from the Arduino.
+        Maps the lowest distance (worst slouch) to a value between 0 and 220.
+        (We stop at 220 so it runs the UI, but avoids triggering the physical 900 slap limit 
+        until the 2-second timer completes)
         """
-        data = self.read_and_parse_data()
-        if data is not None and len(data) >= 6:
-            # Print the array of distances to the console
-            print(f"Distances: {data}")
-            
-            if any(val > 10 for val in data):
-                print("---> Slouch Detected! Slapping!!! <---")
-                self.trigger_the_slap_to_end_all_slouching_from_the_news_paper_of_doom()
-            else:
-                print("Posture is good.")
+        min_dist = min(data)
+        if min_dist <= MIN_DISTANCE:
+            return 0
+        elif min_dist >= MAX_DISTANCE:
+            return 220
+        else:
+            # Scale the distance to a 1-220 byte value.
+            ratio = (MAX_DISTANCE - min_dist) / (MAX_DISTANCE - MIN_DISTANCE)
+            return int(ratio * 220)
 
-    def trigger_the_slap_to_end_all_slouching_from_the_news_paper_of_doom(self):
+    def send_intensity(self, intensity):
         """
-        Sends a binary True to the Arduino to trigger the physical slap mechanism.
+        Sends the byte value to the Arduino to drive the Shrimp Meter.
         """
         if self.connection:
             try:
-                # Sending a literal byte representing 1 (binary True)
-                self.connection.write(bytes([1]))
+                self.connection.write(bytes([intensity]))
             except serial.SerialException as e:
-                print(f"Failed to send binary True: {e}")
+                print(f"Failed to send intensity: {e}")
+
+    def detect_slouch(self):
+        """
+        Detects the degree of slouching and acts on it.
+        """
+        data = self.read_and_parse_data()
+        if data is not None and len(data) >= 6:
+            intensity = self.calculate_slouch_intensity(data)
+            
+            # Continuously send the degree of slouching to the Shrimp Meter
+            self.send_intensity(intensity)
+            print(f"Distances: {data} | Shrimp Level: {intensity}/220")
+            
+            if intensity > 128:  # threshold representing 50% slouch
+                if self.slouch_start_time is None:
+                    # Start the timer!
+                    self.slouch_start_time = time.time()
+                    print("Slouch detected! Starting 2-second timer...")
+                else:
+                    elapsed_time = time.time() - self.slouch_start_time
+                    
+                    if elapsed_time >= 2.0:
+                        print(f"---> Slouch Detected for {elapsed_time:.1f}s! SLAPPING!!! <---")
+                        self.send_intensity(255)
+                        self.slouch_start_time = None
+                    else:
+                        print(f"Slouching... (Warning: {elapsed_time:.1f}s / 2.0s)")
+            else:
+                self.slouch_start_time = None
+                print("Posture is good.")
                 
     def close(self):
         """

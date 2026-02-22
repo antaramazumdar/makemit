@@ -27,14 +27,8 @@ byte boom[8] = {
 };
 
 byte shrimp[8] = {
-  B00110,
-  B01100,
-  B11110,
-  B01111,
-  B00111,
-  B00011,
-  B00001,
-  B00000  // empty row (required for 5x8 LCD char format)
+    B00110, B01100, B11110, B01111, B00111, B00011, B00001,
+    B00000 // empty row (required for 5x8 LCD char format)
 };
 
 unsigned long currentMillis;
@@ -117,8 +111,12 @@ void punish() {
 void loop() {
   currentMillis = millis();
   // Check if we are being told to punish
-  int slouch_data = analogRead(COM_PIN) > 512;
-  if (slouch_data >= 512) {
+  // slouch_data reads between 0 and 1023
+  int slouch_data = analogRead(COM_PIN);
+
+  // If the slouch is severe enough (above ~90% intensity), trigger the slap
+  // logic
+  if (slouch_data >= 900) {
     punish();
   }
 
@@ -133,9 +131,10 @@ void loop() {
       lcd.write(byte(0));
       lcd.write(byte(0));
       lcd.write(byte(0));
-      lcd.write(byte(0));   
+      lcd.write(byte(0));
       lastLCDUpdate = millis();
-      // IDEA --> SHRIMP METER - detects how close you are to triggering it, 16 shrimps causes a slap.
+      // IDEA --> SHRIMP METER - detects how close you are to triggering it, 16
+      // shrimps causes a slap.
     }
 
     int zeroedCount = i % (255 * 3);
@@ -155,7 +154,7 @@ void loop() {
     i++;
     delay(led_speed);
   } else {
-    int shrimp_num = slouch_data/32;
+    int shrimp_num = slouch_data / 32;
     if (currentMillis - lastLCDUpdate >= shrimpterval) {
       lcd.clear();
       lcd.setCursor(0, 0);
@@ -163,10 +162,8 @@ void loop() {
       for (int i = 0; i < shrimp_num; i++) {
         lcd.setCursor(i, 1);
         lcd.write(byte(1));
-    }
+      }
       lastLCDUpdate = millis();
-
     }
-
   }
 }

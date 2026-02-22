@@ -78,24 +78,16 @@ void setup() {
 
   // Set A2 as an output to talk to the Punishment Arduino
   pinMode(A2, OUTPUT);
-  digitalWrite(A2, LOW); // Default to low
+  analogWrite(A2, 0); // Default to 0
 }
 
 void loop() {
   wait_for_sit();
 
-  // 1. Check if the Python script is telling us to slap!
   if (Serial.available() > 0) {
     int incomingByte = Serial.read();
-    if (incomingByte == 1) {
-      // Set A2 to HIGH (5V), which the Punishment Arduino will read as 1023 on
-      // its analog pin
-      digitalWrite(A2, HIGH);
-      // Hold the signal for half a second so the other Arduino has time to read
-      // it
-      delay(500);
-      digitalWrite(A2, LOW);
-    }
+
+    analogWrite(A2, incomingByte);
   }
 
   // 2. Continue reading sensors

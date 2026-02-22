@@ -14,6 +14,10 @@ float distance_1;
 float distance_2;
 float distance_3 = 10;
 
+int PRESS_PIN = A1;
+int pressure;
+bool sitting = false;
+
 float readUltrasonic(uint8_t trigPin, uint8_t echoPin) {
   digitalWrite(trigPin, LOW);
   delayMicroseconds(2);
@@ -35,11 +39,12 @@ void setup() {
 
   pinMode(TRIG_2, OUTPUT);
   pinMode(ECHO_2, INPUT);
+
+  pinMode(PRESS_PIN, INPUT)
 }
 
 void loop() {
-
-  distance_1 = readUltrasonic(TRIG_1, ECHO_1);
+  wait_for_sitting() distance_1 = readUltrasonic(TRIG_1, ECHO_1);
   delay(50); // Prevent interference
 
   distance_2 = readUltrasonic(TRIG_2, ECHO_2);
@@ -57,6 +62,20 @@ void loop() {
   Serial.println(">");
 
   delay(200); // 5 readings per second
+}
+
+bool wait_for_sit() {
+  while (sitting == false) {
+    pressure = analogRead(PRESS_PIN);
+    // Serial.println(pressure);
+    if (pressure > 10) {
+      sitting = true;
+    } else {
+      delay(100);
+      continue;
+    }
+  }
+  return sitting;
 }
 
 // Print results

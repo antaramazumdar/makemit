@@ -1,10 +1,10 @@
-
-import requests
 import threading
 import subprocess
 import random
 import sys
 import time
+import requests
+
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QPushButton, QVBoxLayout, 
                              QWidget, QLabel, QGraphicsDropShadowEffect, QSpinBox)
 from PyQt6.QtCore import Qt, pyqtSignal, QObject, QThread
@@ -12,15 +12,16 @@ from PyQt6.QtGui import QColor
 from arduino_to_laptop import ArduinoReader
 
 
-# --- 🔑 CONFIGURATION ---
 VOICES_URL = "https://api.elevenlabs.io/v1/voices"
-ELEVEN_KEY = "d4dc9c60fec5a25472fa8ba900653932f75fe1a2f9f86a1d038455fcb80f9540" # Add API key here
+ELEVEN_KEY = "_" # Add API key here
 
 class WorkerSignals(QObject):
+    '''Signals if the class is ready'''
     result = pyqtSignal(str)
     finished = pyqtSignal()
 
 class MonitorThread(QThread):
+    '''Monitors the app thread and activation time'''
     slouch_found = pyqtSignal()
     status_update = pyqtSignal(str)
 
@@ -30,20 +31,17 @@ class MonitorThread(QThread):
         self.active = True
 
     def run(self):
+        '''Runs main loop'''
         try:
             reader = ArduinoReader()
             start_time = time.time()
             self.status_update.emit("Monitoring Active...")
 
             while self.active and (time.time() - start_time < self.duration_secs):
-                # Poll the Arduino via your detect_slouch method
-                # Note: Adjust your ArduinoReader to return True/False or similar
-                if reader.detect_slouch(): 
+                if reader.detect_slouch():
                     self.slouch_found.emit()
-                    time.sleep(8) # Cool-down to prevent audio/slap overlapping
-                
-                self.msleep(100) # CPU-friendly polling
-            
+                    time.sleep(8)
+                self.msleep(100)
             reader.close()
         except Exception as e:
             self.status_update.emit(f"Serial Error: {e}")
@@ -55,7 +53,6 @@ class WhackWorker(threading.Thread):
         self.signals = signals
         self.roasts = [
             "Your posture violates at least three constraints in any reasonable optimization problem.",
-            "Stop imitating a shrimp and sit up like a citizen!",
             "You're bent like a resistor in a breadboard that nobody bothered to straighten. Fix it!",
             "The moment arm on that hunch is impressive. Reduce the load and move it back over your center of mass.",
             "Your spine has worse load distribution than a bridge designed by a freshman.",
@@ -68,19 +65,15 @@ class WhackWorker(threading.Thread):
         try:
             # 1. Voice Roulette
             headers = {"xi-api-key": ELEVEN_KEY}
-            v_res = requests.get(VOICES_URL, headers=headers)
-            
+            v_res = requests.get(VOICES_URL, headers=headers)           
             if v_res.status_code != 200:
-                voice = {"name": "Broken API Newsie", "voice_id": "JBFqnCBsd6RMkjVDRZzb"}
+                voice = {"name": "Villain", "voice_id": "TDTTIZEngvvWARkECefs"}
             else:
-                voices_list = v_res.json().get("voices", [])
-                
+                voices_list = v_res.json().get("voices", [])            
                 if not voices_list:
-                    voice = {"name": "Lonely Newsie", "voice_id": "JBFqnCBsd6RMkjVDRZzb"}
+                    voice = {"name": "Villain", "voice_id": "TDTTIZEngvvWARkECefs"}
                 else:
-                    # Logic to make sure we don't pick a Newsie if we have other options
                     voice = random.choice(voices_list)
-            
             roast = random.choice(self.roasts)
 
             # 2. TTS
@@ -208,21 +201,21 @@ class WhimsicalApp(QMainWindow):
 
         # Status Label
         self.status_label = QLabel("Ready to watch your back...")
-        self.status_label.setStyleSheet("color: #F5DEB3; font-size: 12px; font-weight: normal; font-style: italic;")
+        self.status_label.setStyleSheet("color: #F5DEB3; font-size: 16px; " \
+        "font-weight: normal; font-style: italic;")
         self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.status_label)
 
         # Execute Button
         self.btn = QPushButton("Start Monitoring")
         self.btn.clicked.connect(self.start_monitoring)
-        
+
         # Add a subtle shadow to the button
         shadow = QGraphicsDropShadowEffect()
         shadow.setBlurRadius(15)
         shadow.setColor(QColor(0, 0, 0, 150))
         shadow.setOffset(0, 5)
         self.btn.setGraphicsEffect(shadow)
-        
         layout.addWidget(self.btn)
 
         # Central Widget
@@ -233,7 +226,6 @@ class WhimsicalApp(QMainWindow):
     def start_monitoring(self):
         self.btn.setEnabled(False)
         self.btn.setText("WATCHING...")
-        
         self.monitor = MonitorThread(self.time_input.value())
         self.monitor.status_update.connect(self.status_label.setText)
         self.monitor.slouch_found.connect(self.trigger_voice_roast)
@@ -243,7 +235,7 @@ class WhimsicalApp(QMainWindow):
     def trigger_voice_roast(self):
         self.status_label.setText("🚨 SLOUCH! WHACKING...")
         self.signals = WorkerSignals()
-        self.signals.finished.connect(lambda: self.status_label.setText("👀 Monitoring..."))
+        self.signals.finished.connect(lambda: self.status_label.setText("Monitoring..."))
         self.voice_worker = WhackWorker(self.signals)
         self.voice_worker.start()
 

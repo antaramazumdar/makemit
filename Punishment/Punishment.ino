@@ -6,7 +6,11 @@ LiquidCrystal lcd(7, 8, 5, 4, 3, 2);
 
 Servo myServo;
 
-int COM_PIN = A2;
+int COM_1 = A1;
+int COM_2 = A2;
+int COM_3 = A3;
+int COM_4 = A4;
+
 bool lights = false;
 
 int RED = 11;
@@ -27,8 +31,14 @@ byte boom[8] = {
 };
 
 byte shrimp[8] = {
-    B00110, B01100, B11110, B01111, B00111, B00011, B00001,
-    B00000 // empty row (required for 5x8 LCD char format)
+  B00110,
+  B01100,
+  B11110,
+  B01111,
+  B00111,
+  B00011,
+  B00001,
+  B00000  // empty row (required for 5x8 LCD char format)
 };
 
 unsigned long currentMillis;
@@ -45,7 +55,11 @@ void setup() {
   lcd.print("!!!");
   lcd.setCursor(4, 1);
   lcd.print("PREPARE");
-  pinMode(COM_PIN, INPUT);
+  pinMode(COM_1, INPUT);
+  pinMode(COM_2, INPUT);
+  pinMode(COM_3, INPUT);
+  pinMode(COM_4, INPUT);
+
   pinMode(RED, OUTPUT);
   pinMode(GREEN, OUTPUT);
   pinMode(BLUE, OUTPUT);
@@ -111,30 +125,30 @@ void punish() {
 void loop() {
   currentMillis = millis();
   // Check if we are being told to punish
-  // slouch_data reads between 0 and 1023
-  int slouch_data = analogRead(COM_PIN);
+  bool slouch_1 = analogRead(COM_1) > 512;
+  bool slouch_2 = analogRead(COM_2) > 512;
+  bool slouch_3 = analogRead(COM_3) > 512;
+  bool slouch_4 = analogRead(COM_4) > 512;
+  int slouch_data = (slouch_1 + 2*slouch_2 + 4*slouch_3 + 8*slouch_4);
 
-  // If the slouch is severe enough (above ~90% intensity), trigger the slap
-  // logic
-  if (slouch_data >= 900) {
+  if (slouch_data == 15) {
     punish();
   }
 
   // Update LEDs continuously if the light show has started
   if (lights == true) {
+    lcd.clear();
+    lcd.print("TAKE THAT SHRIMP");
     if (currentMillis - lastLCDUpdate >= lcdInterval) {
       lights = false;
-      lcd.clear();
-      lcd.print("TAKE THAT SHRIMP");
       lcd.setCursor(5, 1);
       lcd.write(byte(0));
       lcd.write(byte(0));
       lcd.write(byte(0));
       lcd.write(byte(0));
-      lcd.write(byte(0));
+      lcd.write(byte(0));   
       lastLCDUpdate = millis();
-      // IDEA --> SHRIMP METER - detects how close you are to triggering it, 16
-      // shrimps causes a slap.
+      // IDEA --> SHRIMP METER - detects how close you are to triggering it, 16 shrimps causes a slap.
     }
 
     int zeroedCount = i % (255 * 3);
@@ -154,16 +168,17 @@ void loop() {
     i++;
     delay(led_speed);
   } else {
-    int shrimp_num = slouch_data / 32;
     if (currentMillis - lastLCDUpdate >= shrimpterval) {
       lcd.clear();
       lcd.setCursor(0, 0);
       lcd.print("ANALYZING SHRIMP");
-      for (int i = 0; i < shrimp_num; i++) {
+      for (int i = 0; i < slouch_data; i++) {
         lcd.setCursor(i, 1);
         lcd.write(byte(1));
-      }
-      lastLCDUpdate = millis();
     }
+      lastLCDUpdate = millis();
+
+    }
+
   }
 }

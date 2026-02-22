@@ -44,10 +44,12 @@ byte shrimp[8] = {
 unsigned long currentMillis;
 unsigned long lastLCDUpdate = 0;
 const unsigned long lcdInterval = 2000; // 200 ms
-const unsigned long shrimpterval = 100;
+const unsigned long shrimpterval = 50;
+unsigned long last_slap = 0;
+int slouch_data = 0;
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
   lcd.createChar(0, boom);
   lcd.createChar(1, shrimp);
   lcd.begin(16, 2); // 16 columns, 2 rows
@@ -68,6 +70,7 @@ void setup() {
   // for continuous servos)
   myServo.attach(6);
   myServo.write(90);
+  delay(2000);
 }
 
 void punish() {
@@ -118,26 +121,28 @@ void punish() {
   lcd.write(byte(0));
 
   lights = true;
-  Serial.println(lights);
+  //Serial.println(lights);
   lastLCDUpdate = millis();
+  //last_slap = millis();
 }
 
 void loop() {
   currentMillis = millis();
   // Check if we are being told to punish
-  bool slouch_1 = analogRead(COM_1) > 512;
-  bool slouch_2 = analogRead(COM_2) > 512;
-  bool slouch_3 = analogRead(COM_3) > 512;
-  bool slouch_4 = analogRead(COM_4) > 512;
+  bool slouch_1 = digitalRead(COM_1);
+  bool slouch_2 = digitalRead(COM_2);
+  bool slouch_3 = digitalRead(COM_3);
+  bool slouch_4 = digitalRead(COM_4);
   int slouch_data = (slouch_1 + 2*slouch_2 + 4*slouch_3 + 8*slouch_4);
 
   if (slouch_data == 15) {
     punish();
+    delay(2000);
   }
 
   // Update LEDs continuously if the light show has started
+  //lcd.clear();
   if (lights == true) {
-    lcd.clear();
     lcd.print("TAKE THAT SHRIMP");
     if (currentMillis - lastLCDUpdate >= lcdInterval) {
       lights = false;
@@ -169,15 +174,18 @@ void loop() {
     delay(led_speed);
   } else {
     if (currentMillis - lastLCDUpdate >= shrimpterval) {
+      lastLCDUpdate = millis();
       lcd.clear();
       lcd.setCursor(0, 0);
       lcd.print("ANALYZING SHRIMP");
-      for (int i = 0; i < slouch_data; i++) {
-        lcd.setCursor(i, 1);
-        lcd.write(byte(1));
+      Serial.println(slouch_data);
+      if (slouch_data > 1){
+        for (int i = 0; i < slouch_data; i++) {
+          //lcd.setCursor(i, 1);
+          lcd.write(byte(1));
+        Serial.println(slouch_data);
+      }
     }
-      lastLCDUpdate = millis();
-
     }
 
   }

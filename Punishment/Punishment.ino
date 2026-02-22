@@ -13,7 +13,7 @@ int RED = 11;
 int GREEN = 10;
 int BLUE = 9;
 
-int speed = 1; // lower = faster, higher = slower (ms per step)
+int led_speed = 1; // lower = faster, higher = slower (ms per step)
 
 // FIXED PIN CONFLICT: Swapped to 12 and 13 so they don't clash with GREEN (10)
 // and BLUE (9)
@@ -26,14 +26,31 @@ byte boom[8] = {
     B01010, B10101, B01110, B11111, B01110, B10101, B01010, B00000,
 };
 
+byte shrimp[8] = {
+  B00110,
+  B01100,
+  B11110,
+  B01111,
+  B00111,
+  B00011,
+  B00001,
+  B00000  // empty row (required for 5x8 LCD char format)
+};
+
+unsigned long currentMillis;
 unsigned long lastLCDUpdate = 0;
-const unsigned long lcdInterval = 200; // 200 ms
+const unsigned long lcdInterval = 2000; // 200 ms
+const unsigned long shrimpterval = 100;
 
 void setup() {
   Serial.begin(9600);
   lcd.createChar(0, boom);
+  lcd.createChar(1, shrimp)
   lcd.begin(16, 2); // 16 columns, 2 rows
-  lcd.print("Hello Brandon!");
+  lcd.setCursor(6, 0);
+  lcd.print("!!!");
+  lcd.setCursor(4, 1);
+  lcd.print("PREPARE");
   pinMode(COM_PIN, INPUT);
   pinMode(RED, OUTPUT);
   pinMode(GREEN, OUTPUT);
@@ -46,11 +63,20 @@ void setup() {
 }
 
 void punish() {
-  unsigned long currentMillis = millis();
-
   // 1. Continuous Servo Slap: Spin forward, wait, stop, spin backward, wait,
   // stop (You might need to adjust the delay(500) to get exactly a 90-degree
   // swing)
+  lcd.clear();
+  lcd.print("SLAP INCOMING");
+  lcd.setCursor(6, 1);
+  delay(1000);
+  lcd.print("3");
+  lcd.setCursor(7, 1);
+  delay(1000);
+  lcd.print("2");
+  lcd.setCursor(8, 1);
+  delay(1000);
+  lcd.print("1");
 
   myServo.write(180); // Spin full speed forward
   delay(500);         // Time it takes to swing ~90 degrees
@@ -76,37 +102,42 @@ void punish() {
     delayMicroseconds(500);
   }
   delay(1000); // Wait after spinning
-
-  // ---- Non-blocking LCD update ----
-  if (currentMillis - lastLCDUpdate >= 0.5 * lcdInterval) {
-    lcd.clear();
-    lcd.write("YOU GOT SLAPPED");
-    lcd.setCursor(6, 1);
-    lcd.write(byte(0));
-    lcd.write(byte(0));
-    lcd.write(byte(0));
-  } else if (currentMillis - lastLCDUpdate >= lcdInterval) {
-    lastLCDUpdate = currentMillis;
-    lcd.clear();
-    lcd.write("BOOOM");
-    lcd.setCursor(6, 1);
-    lcd.write(byte(0));
-    lcd.write(byte(0));
-    lcd.write(byte(0));
-  }
+  lcd.clear();
+  lcd.print("YOU GOT SLAPPED");
+  lcd.setCursor(6, 1);
+  lcd.write(byte(0));
+  lcd.write(byte(0));
+  lcd.write(byte(0));
 
   lights = true;
   Serial.println(lights);
+  lastLCDUpdate = millis();
 }
 
 void loop() {
+  currentMillis = millis();
   // Check if we are being told to punish
-  if (analogRead(COM_PIN) > 512) {
+  slouch_data = analogRead(COM_PIN) > 512;
+  if (slouch_data >= 512) {
     punish();
   }
 
   // Update LEDs continuously if the light show has started
   if (lights == true) {
+    if (currentMillis - lastLCDUpdate >= lcdInterval) {
+      lights = false;
+      lcd.clear();
+      lcd.print("TAKE THAT SHRIMP");
+      lcd.setCursor(5, 1);
+      lcd.write(byte(1));
+      lcd.write(byte(1));
+      lcd.write(byte(1));
+      lcd.write(byte(1));
+      lcd.write(byte(1));   
+      lastLCDUpdate = millis();
+      // IDEA --> SHRIMP METER - detects how close you are to triggering it, 16 shrimps causes a slap.
+    }
+
     int zeroedCount = i % (255 * 3);
     int loopVar = zeroedCount / 255;
     int loopValue = zeroedCount % 255;
@@ -122,6 +153,18 @@ void loop() {
     // Serial.println(loopValue);
 
     i++;
-    delay(speed);
+    delay(led_speed);
+  } else {
+    int shrimp_num = slouch_data/32;
+    if (currentMillis - lastLCDUpdate >= shrimpterval) {
+      lcd.setCursor(0, 0);
+      lcd.print("ANALYZING SHRIMP");
+      for (int i = 0; i < shrimp_num; i++) {
+        lcd.setCursor(i, 1);
+        lcd.write(byte(1));
+      lastLCDUpdate = millis();
+    }
+    }
+
   }
 }

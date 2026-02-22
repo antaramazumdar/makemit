@@ -29,7 +29,7 @@ class ArduinoReader:
         Change this if your Arduino connects to a different port!
         """
         # Hardcoded to COM16 based on the system check
-        port = "COM16"
+        port = "COM19"
         print(f"Connecting to explicitly defined port: {port}")
         return port
 
@@ -85,11 +85,11 @@ class ArduinoReader:
         if avg_dist <= MIN_DISTANCE:
             return 0
         elif avg_dist >= MAX_DISTANCE:
-            return 16
+            return 15
         else:
             # Scale the average distance to a 0-16 value.
             ratio = (avg_dist - MIN_DISTANCE) / (MAX_DISTANCE - MIN_DISTANCE)
-            return int(ratio * 16)
+            return int(ratio * 15)
 
     def send_intensity(self, intensity):
         """
@@ -112,7 +112,7 @@ class ArduinoReader:
             
             # Continuously send the degree of slouching to the Shrimp Meter
             self.send_intensity(intensity)
-            print(f"Distances: {data} | Avg: {avg_dist:.1f}cm | Shrimp Level: {intensity}/16")
+            print(f"Distances: {data} | Avg: {avg_dist:.1f}cm | Shrimp Level: {intensity}/15")
             
             if intensity >= 12:  # ~75% slouch threshold
                 if self.slouch_start_time is None:

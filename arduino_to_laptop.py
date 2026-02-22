@@ -13,21 +13,18 @@ ARDUINO_VID = 0x2341
 class ArduinoReader:
     def __init__(self, baud_rate=BAUD_RATE):
         self.baud_rate = baud_rate
-        self.port = self.auto_detect_arduino()
+        self.port = self.get_arduino_port()
         self.connection = self.connect_to_arduino(self.port, self.baud_rate)
 
-    def auto_detect_arduino(self):
+    def get_arduino_port(self):
         """
-        Automatically detects the COM port of a connected Arduino device.
-        """    
-        ports = serial.tools.list_ports.comports()
-        for port in ports:
-            if port.vid == ARDUINO_VID:
-                print(f"Detected Arduino at {port.device}")
-                return port.device
-
-        print("No Arduino found. Please check connections.")
-        return None
+        Returns the hardcoded COM port for the Arduino.
+        Change this if your Arduino connects to a different port!
+        """
+        # Hardcoded to COM16 based on the system check
+        port = "COM16"
+        print(f"Connecting to explicitly defined port: {port}")
+        return port
 
     def connect_to_arduino(self, port_address, baud_rate):
         """
@@ -78,8 +75,14 @@ class ArduinoReader:
         """
         data = self.read_and_parse_data()
         if data is not None and len(data) >= 6:
+            # Print the array of distances to the console
+            print(f"Distances: {data}")
+            
             if any(val > 10 for val in data):
+                print("---> Slouch Detected! Slapping!!! <---")
                 self.trigger_the_slap_to_end_all_slouching_from_the_news_paper_of_doom()
+            else:
+                print("Posture is good.")
 
     def trigger_the_slap_to_end_all_slouching_from_the_news_paper_of_doom(self):
         """
@@ -98,3 +101,20 @@ class ArduinoReader:
         """
         if self.connection:
             self.connection.close()
+
+if __name__ == "__main__":
+    arduino = ArduinoReader()
+
+    if arduino.connection:
+        print("Listening for slouching...")
+        try:
+            while True:
+                arduino.detect_slouch()
+                # A small delay to prevent maxing out the CPU
+                time.sleep(0.01)
+        except KeyboardInterrupt:
+            print("Stopping script...")
+        finally:
+            arduino.close()
+    else:
+        print("Could not connect to Arduino. Exiting.")

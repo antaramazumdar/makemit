@@ -10,8 +10,8 @@ import time
 BAUD_RATE = 115200
 
 # Slouch distance thresholds (in cm)
-MAX_DISTANCE = 40.0   # The distance considered to be a "full slouch"
-MIN_DISTANCE = 10.0   # The distance considered to be "perfect posture"
+MAX_DISTANCE = 15.0   # The distance considered to be a "full slouch"
+MIN_DISTANCE = 0.0   # The distance considered to be "perfect posture"
 
 
 class ArduinoReader:

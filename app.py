@@ -1,27 +1,220 @@
-import streamlit as st
-from supabase import create_client
 
-# Setup Supabase (Add these to 'Settings > Secrets' on Streamlit Cloud)
-url = st.secrets["SUPABASE_URL"]
-key = st.secrets["SUPABASE_KEY"]
-supabase = create_client(url, key)
+import requests
+import threading
+import subprocess
+import random
+import sys
+from PyQt6.QtWidgets import (QApplication, QMainWindow, QPushButton, QVBoxLayout, 
+                             QWidget, QLabel, QGraphicsDropShadowEffect, QSpinBox)
+from PyQt6.QtCore import Qt, pyqtSignal, QObject
+from PyQt6.QtGui import QColor
 
-st.title("🗞️ News-o-Matic Web Control")
+# --- 🔑 CONFIGURATION ---
+VOICES_URL = "https://api.elevenlabs.io/v1/voices"
+ELEVEN_KEY = "d4dc9c60fec5a25472fa8ba900653932f75fe1a2f9f86a1d038455fcb80f9540" # Add API key here
 
-# Voice Library (ElevenLabs IDs)
-VOICES = {
-    "Bill (News Anchor)": "JBFqnCBsd6RMkjVDRZzb",
-    "Rachel (Calm/Strict)": "21m00T838D4wI36J7TQz",
-    "Domino (Grumpy)": "AZnzlk1XhkpsbmfWCmEE",
-}
+class WorkerSignals(QObject):
+    result = pyqtSignal(str)
+    finished = pyqtSignal()
 
-persona = st.selectbox(
-    "Pick a Persona", ["1950s Newsie", "Angry Drill Sergeant", "Sarcastic AI"]
-)
-voice_label = st.selectbox("Select Voice", list(VOICES.keys()))
+class WhackWorker(threading.Thread):
+    def __init__(self, signals):
+        super().__init__()
+        self.signals = signals
+        self.roasts = [
+            "Your posture violates at least three constraints in any reasonable optimization problem.",
+            "Stop imitating a shrimp and sit up like a citizen!",
+            "You're bent like a resistor in a breadboard that nobody bothered to straighten. Fix it!",
+            "The moment arm on that hunch is impressive. Reduce the load and move it back over your center of mass.",
+            "Your spine has worse load distribution than a bridge designed by a freshman.",
+            "You're one vertebra away from being classified as a non-load-bearing wall.",
+            "Your posture looks like code that works but nobody knows why, how bought you git pull your head back",
+            "Your spine looks like a capacitor charging curve"
+        ]
 
-if st.button("🔥 TRIGGER CATAPULT", type="primary"):
-    supabase.table("catapult_status").update(
-        {"status": "FIRE", "persona": persona, "voice_id": VOICES[voice_label]}
-    ).eq("id", 1).execute()
-    st.success("Signal sent to the local station!")
+    def run(self):
+        try:
+            # 1. Voice Roulette
+            headers = {"xi-api-key": ELEVEN_KEY}
+            v_res = requests.get(VOICES_URL, headers=headers)
+            
+            if v_res.status_code != 200:
+                voice = {"name": "Broken API Newsie", "voice_id": "JBFqnCBsd6RMkjVDRZzb"}
+            else:
+                voices_list = v_res.json().get("voices", [])
+                
+                if not voices_list:
+                    voice = {"name": "Lonely Newsie", "voice_id": "JBFqnCBsd6RMkjVDRZzb"}
+                else:
+                    # Logic to make sure we don't pick a Newsie if we have other options
+                    voice = random.choice(voices_list)
+            
+            roast = random.choice(self.roasts)
+
+            # 2. TTS
+            tts_url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice['voice_id']}"
+            tts_res = requests.post(tts_url, headers=headers, json={
+                "text": roast, "model_id": "eleven_turbo_v2_5"
+            })
+
+            if tts_res.status_code == 200:
+                with open("whack.mp3", "wb") as f:
+                    f.write(tts_res.content)
+                subprocess.run(["mpg123", "-q", "whack.mp3"])
+            else:
+                print(f"TTS ERROR: {tts_res.text}")
+        except Exception as e:
+            self.signals.result.emit(f"Error: {e}")
+        finally:
+            self.signals.finished.emit()
+
+class WhimsicalApp(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("WHACKATHON")
+        self.setFixedSize(500, 550)
+        
+        # --- UI DESIGN (QSS) ---
+        self.setStyleSheet("""
+            QMainWindow { background-color: #2B2622; }
+            QLabel#Header {
+                color: #D4AF37;
+                font-family: 'Comic Sans MS';
+                font-size: 32px;
+                font-weight: bold;
+            }
+            QLabel {
+                color: #F5DEB3;
+                font-family: 'Comic Sans MS';
+                font-size: 14px;
+            }
+            QSpinBox {
+                background-color: #1A1714;
+                color: #F5DEB3;
+                border: 2px solid #D4AF37;
+                border-radius: 10px;
+                font-family: 'Comic Sans MS';
+                font-size: 24px;
+                padding: 10px;
+                selection-background-color: #D4AF37;
+            }
+            /* Styling the buttons */
+            QSpinBox::up-button {
+                subcontrol-origin: border;
+                subcontrol-position: top right;
+                width: 40px;
+                background-color: #3E3832;
+                border-left: 1px solid #D4AF37;
+                border-bottom: 1px solid #D4AF37;
+                border-top-right-radius: 8px;
+            }
+            QSpinBox::down-button {
+                subcontrol-origin: border;
+                subcontrol-position: bottom right;
+                width: 40px;
+                background-color: #3E3832;
+                border-left: 1px solid #D4AF37;
+                border-bottom-right-radius: 8px;
+            }
+            /* Use built-in primitive arrows that Qt understands */
+            QSpinBox::up-arrow {
+                width: 14px;
+                height: 14px;
+                /* This is the key: simple color and primitive arrow */
+                border-left: 7px solid #2B2622; 
+                border-right: 7px solid #2B2622;
+                border-bottom: 9px solid #D4AF37;
+            }
+            QSpinBox::down-arrow {
+                width: 14px;
+                height: 14px;
+                border-left: 7px solid #2B2622;
+                border-right: 7px solid #2B2622;
+                border-top: 9px solid #D4AF37;
+            }
+            QSpinBox::up-button:hover, QSpinBox::down-button:hover {
+                background-color: #4E463D;
+            }
+            QPushButton {
+                background-color: #D4AF37;
+                color: #1A1714;
+                font-family: 'Comic Sans MS';
+                font-size: 22px;
+                font-weight: bold;
+                border-radius: 30px;
+                min-height: 70px;
+            }
+            QPushButton:hover {
+                background-color: #F5DEB3;
+            }
+            QPushButton:pressed {
+                background-color: #B8860B;
+            }
+            QPushButton:disabled {
+                background-color: #444;
+                color: #888;
+            }
+        """)
+
+        # Main Layout
+        layout = QVBoxLayout()
+        layout.setContentsMargins(40, 40, 40, 40)
+        layout.setSpacing(20)
+
+        # Header
+        self.header = QLabel("WHACKATHON")
+        self.header.setObjectName("Header")
+        self.header.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(self.header)
+
+        # --- THE NEW NUMERICAL DROPDOWN (SPINBOX) ---
+        self.time_input = QSpinBox()
+        self.time_input.setRange(1, 120)
+        self.time_input.setSuffix(" min")
+        self.time_input.setValue(15)
+        layout.addWidget(self.time_input)
+
+        # Status Label
+        self.status_label = QLabel("Ready to watch your back...")
+        self.status_label.setStyleSheet("color: #F5DEB3; font-size: 12px; font-weight: normal; font-style: italic;")
+        self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(self.status_label)
+
+        # Execute Button
+        self.btn = QPushButton("Start Monitoring")
+        self.btn.clicked.connect(self.trigger_whack)
+        
+        # Add a subtle shadow to the button
+        shadow = QGraphicsDropShadowEffect()
+        shadow.setBlurRadius(15)
+        shadow.setColor(QColor(0, 0, 0, 150))
+        shadow.setOffset(0, 5)
+        self.btn.setGraphicsEffect(shadow)
+        
+        layout.addWidget(self.btn)
+
+        # Central Widget
+        container = QWidget()
+        container.setLayout(layout)
+        self.setCentralWidget(container)
+
+    def trigger_whack(self):
+        self.btn.setEnabled(False)
+        self.btn.setText("Monitoring...")
+        
+        self.signals = WorkerSignals()
+        self.signals.result.connect(self.status_label.setText)
+        self.signals.finished.connect(self.on_finished)
+        
+        self.worker = WhackWorker(self.signals)
+        self.worker.start()
+
+    def on_finished(self):
+        self.btn.setEnabled(True)
+        self.btn.setText("Start Monitoring")
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    window = WhimsicalApp()
+    window.show()
+    sys.exit(app.exec())

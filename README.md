@@ -11,3 +11,8 @@ Here's how it works:
 2. The posture gods look at the sensor readings and determine if the sitter is slouching or not. 
 3. The sloucher is punished accordingly.
 4. Posture is fixed!
+
+
+
+
+

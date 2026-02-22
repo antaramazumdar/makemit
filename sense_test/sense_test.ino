@@ -44,8 +44,7 @@ void setup() {
 }
 
 void loop() {
-  wait_for_sitting()
-  distance_1 = readUltrasonic(TRIG_1, ECHO_1);
+  wait_for_sitting() distance_1 = readUltrasonic(TRIG_1, ECHO_1);
   delay(50); // Prevent interference
 
   distance_2 = readUltrasonic(TRIG_2, ECHO_2);
@@ -65,14 +64,14 @@ void loop() {
   delay(200); // 5 readings per second
 }
 
-bool wait_for_sit(){
-  while (sitting == false){
+bool wait_for_sit() {
+  while (sitting == false) {
     pressure = analogRead(PRESS_PIN);
     // Serial.println(pressure);
-    if (pressure > 10){
+    if (pressure > 10) {
       sitting = true;
     } else {
-      delay(100)
+      delay(100);
       continue;
     }
   }

@@ -5,14 +5,33 @@ uint8_t TRIG_1 = 3;
 uint8_t ECHO_1 = 2;
 
 // Sensor 2 pins
-uint8_t TRIG_2 = 4;
-uint8_t ECHO_2 = 5;
+uint8_t TRIG_2 = 5;
+uint8_t ECHO_2 = 4;
+
+// Sensor 3 pins
+uint8_t TRIG_3 = 7;
+uint8_t ECHO_3 = 6;
+
+// Sensor 4 pins
+uint8_t TRIG_4 = 9;
+uint8_t ECHO_4 = 8;
+
+// Sensor 5 pins
+uint8_t TRIG_5 = 9;
+uint8_t ECHO_5 = 8;
+
+// Sensor 6 pins
+uint8_t TRIG_6 = 9;
+uint8_t ECHO_6 = 8;
 
 float delay_1;
 float delay_2;
 float distance_1;
 float distance_2;
-float distance_3 = 10;
+float distance_3;
+float distance_4;
+float distance_5;
+float distance_6;
 
 int PRESS_PIN = A1;
 int pressure;
@@ -31,6 +50,9 @@ float readUltrasonic(uint8_t trigPin, uint8_t echoPin) {
   return distance;
 }
 
+// Forward declaration
+bool wait_for_sit();
+
 void setup() {
   Serial.begin(115200);
 
@@ -40,25 +62,73 @@ void setup() {
   pinMode(TRIG_2, OUTPUT);
   pinMode(ECHO_2, INPUT);
 
-  pinMode(PRESS_PIN, INPUT)
+  pinMode(TRIG_3, OUTPUT);
+  pinMode(ECHO_3, INPUT);
+
+  pinMode(TRIG_4, OUTPUT);
+  pinMode(ECHO_4, INPUT);
+
+  pinMode(TRIG_5, OUTPUT);
+  pinMode(ECHO_5, INPUT);
+
+  pinMode(TRIG_6, OUTPUT);
+  pinMode(ECHO_6, INPUT);
+
+  pinMode(PRESS_PIN, INPUT);
+
+  // Set A2 as an output to talk to the Punishment Arduino
+  pinMode(A2, OUTPUT);
+  digitalWrite(A2, LOW); // Default to low
 }
 
 void loop() {
-  wait_for_sitting() distance_1 = readUltrasonic(TRIG_1, ECHO_1);
+  wait_for_sit();
+
+  // 1. Check if the Python script is telling us to slap!
+  if (Serial.available() > 0) {
+    int incomingByte = Serial.read();
+    if (incomingByte == 1) {
+      // Set A2 to HIGH (5V), which the Punishment Arduino will read as 1023 on
+      // its analog pin
+      digitalWrite(A2, HIGH);
+      // Hold the signal for half a second so the other Arduino has time to read
+      // it
+      delay(500);
+      digitalWrite(A2, LOW);
+    }
+  }
+
+  // 2. Continue reading sensors
+  distance_1 = readUltrasonic(TRIG_1, ECHO_1);
   delay(50); // Prevent interference
 
   distance_2 = readUltrasonic(TRIG_2, ECHO_2);
   delay(50);
 
   distance_3 = readUltrasonic(TRIG_3, ECHO_3);
+  delay(50);
 
-  // Send data in EXACT format Python expects
+  distance_4 = readUltrasonic(TRIG_4, ECHO_4);
+  delay(50);
+
+  distance_5 = readUltrasonic(TRIG_5, ECHO_5);
+  delay(50);
+
+  distance_6 = readUltrasonic(TRIG_6, ECHO_6);
+
+  // Send data in EXACT format Python expects: <d1,d2,d3,d4,d5,d6>
   Serial.print("<");
   Serial.print(distance_1);
   Serial.print(",");
   Serial.print(distance_2);
   Serial.print(",");
   Serial.print(distance_3);
+  Serial.print(",");
+  Serial.print(distance_4);
+  Serial.print(",");
+  Serial.print(distance_5);
+  Serial.print(",");
+  Serial.print(distance_6);
   Serial.println(">");
 
   delay(200); // 5 readings per second
@@ -76,17 +146,4 @@ bool wait_for_sit() {
     }
   }
   return sitting;
-}
-
-// Print results
-Serial.print("Sensor 1: ");
-Serial.print(distance_1);
-Serial.print(" cm | ");
-
-Serial.print("Sensor 2: ");
-Serial.print(distance_2);
-Serial.println(" cm");
-
-// Wait 1 second before next full cycle
-delay(1000);
 }

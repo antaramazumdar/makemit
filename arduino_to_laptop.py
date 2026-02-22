@@ -77,14 +77,8 @@ class ArduinoReader:
         Detects if the user is slouching based on the data received from the Arduino.
         """
         data = self.read_and_parse_data()
-        if data is not None and len(data) >= 3:
-            if data[0] > 1:
-                self.trigger_the_slap_to_end_all_slouching_from_the_news_paper_of_doom()
-            elif data[1] > 1:
-                self.trigger_the_slap_to_end_all_slouching_from_the_news_paper_of_doom()
-            elif data[2] > 1:
-                self.trigger_the_slap_to_end_all_slouching_from_the_news_paper_of_doom()
-            else:
+        if data is not None and len(data) >= 6:
+            if any(val > 10 for val in data):
                 self.trigger_the_slap_to_end_all_slouching_from_the_news_paper_of_doom()
 
     def trigger_the_slap_to_end_all_slouching_from_the_news_paper_of_doom(self):

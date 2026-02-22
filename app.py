@@ -4,10 +4,13 @@ import threading
 import subprocess
 import random
 import sys
+import time
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QPushButton, QVBoxLayout, 
                              QWidget, QLabel, QGraphicsDropShadowEffect, QSpinBox)
 from PyQt6.QtCore import Qt, pyqtSignal, QObject, QThread
 from PyQt6.QtGui import QColor
+from arduino_to_laptop import ArduinoReader
+
 
 # --- 🔑 CONFIGURATION ---
 VOICES_URL = "https://api.elevenlabs.io/v1/voices"
@@ -30,7 +33,7 @@ class MonitorThread(QThread):
         try:
             reader = ArduinoReader()
             start_time = time.time()
-            self.status_update.emit("👀 Monitoring Active...")
+            self.status_update.emit("Monitoring Active...")
 
             while self.active and (time.time() - start_time < self.duration_secs):
                 # Poll the Arduino via your detect_slouch method

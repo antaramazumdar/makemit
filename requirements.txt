@@ -2,3 +2,6 @@ streamlit
 supabase
 google-genai
 elevenlabs
+pyserial
+PyQt6
+requests
